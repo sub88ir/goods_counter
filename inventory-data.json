@@ -1,5 +1,87 @@
 {
-  "updatedAt": "2026-11-18T01:43:02.435Z",
-  "items": [],
-  "vocab": []
+  "updatedAt": "2026-11-18T01:50:03.592Z",
+  "items": [
+    {
+      "id": "1794966436404",
+      "title": "에어프라이어 네이비",
+      "count": 6,
+      "color": "purple"
+    },
+    {
+      "id": "1794966426879",
+      "title": "진공흡착스팀다리미",
+      "count": 8,
+      "color": "cyan"
+    },
+    {
+      "id": "1794966416766",
+      "title": "일월 더블",
+      "count": 1,
+      "color": "emerald"
+    },
+    {
+      "id": "1794966413278",
+      "title": "일월 싱글",
+      "count": 4,
+      "color": "emerald"
+    },
+    {
+      "id": "1794966387636",
+      "title": "패딩솜 크림더블",
+      "count": 2,
+      "color": "blue"
+    },
+    {
+      "id": "1794966381923",
+      "title": "패딩솜 크림싱글",
+      "count": 3,
+      "color": "blue"
+    },
+    {
+      "id": "1794966371971",
+      "title": "패딩솜 모카더블",
+      "count": 2,
+      "color": "blue"
+    },
+    {
+      "id": "1794966366974",
+      "title": "패딩솜 모카싱글",
+      "count": 3,
+      "color": "blue"
+    }
+  ],
+  "vocab": [
+    {
+      "title": "에어프라이어 네이비",
+      "color": "purple"
+    },
+    {
+      "title": "진공흡착스팀다리미",
+      "color": "cyan"
+    },
+    {
+      "title": "일월 더블",
+      "color": "emerald"
+    },
+    {
+      "title": "일월 싱글",
+      "color": "emerald"
+    },
+    {
+      "title": "패딩솜 크림더블",
+      "color": "blue"
+    },
+    {
+      "title": "패딩솜 크림싱글",
+      "color": "blue"
+    },
+    {
+      "title": "패딩솜 모카더블",
+      "color": "blue"
+    },
+    {
+      "title": "패딩솜 모카싱글",
+      "color": "blue"
+    }
+  ]
 }
