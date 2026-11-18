@@ -1,1111 +1,584 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>스마트 수기 재고 카운터</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Pretendard / Inter Font -->
-    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
-    
-    <style>
-        body {
-            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
-            background-color: #f1f5f9;
-            color: #0f172a;
-            /* 모바일 당겨서 새로고침 방지 및 터치 최적화 */
-            overscroll-behavior-y: contain;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        /* 연속 터치 시 더블탭 확대 방지 */
-        .no-zoom {
-            touch-action: manipulation;
-            user-select: none;
-            -webkit-user-select: none;
-        }
-
-        /* 숫자 입력창 화살표(스피너) 제거 */
-        input[type="number"]::-webkit-inner-spin-button,
-        input[type="number"]::-webkit-outer-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-        input[type="number"] {
-            -moz-appearance: textfield;
-        }
-
-        /* 항목 강조 애니메이션 */
-        @keyframes highlightPulse {
-            0%, 100% { background-color: #ffffff; transform: scale(1); }
-            30% { background-color: #eff6ff; border-color: #3b82f6; transform: scale(1.015); }
-            60% { background-color: #dbeafe; border-color: #3b82f6; }
-        }
-        .item-highlight {
-            animation: highlightPulse 1.2s ease-in-out;
-        }
-
-        /* 커스텀 스크롤바 */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 3px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>스마트 수기 재고 카운터</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { -webkit-tap-highlight-color: transparent; }
+    .touch-btn { touch-action: manipulation; user-select: none; }
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type=number] { -moz-appearance: textfield; }
+  </style>
 </head>
-<body class="min-h-screen pb-28">
+<body class="bg-slate-100 min-h-screen pb-24 text-slate-800 font-sans">
 
-    <!-- 상단 고정 헤더 & 대시보드 요약 바 -->
-    <header class="sticky top-0 z-30 bg-slate-900 text-white shadow-lg">
-        <div class="max-w-xl mx-auto px-4 py-3">
-            <div class="flex items-center justify-between mb-2.5">
-                <div class="flex items-center space-x-2">
-                    <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-lg shadow-inner">
-                        <i class="fa-solid fa-boxes-stacked text-sm"></i>
-                    </div>
-                    <h1 class="text-lg font-bold tracking-tight">스마트 재고 카운터</h1>
-                </div>
-                <div class="flex items-center space-x-1.5">
-                    <button onclick="openHelpModal()" class="p-2 text-slate-300 hover:text-white rounded-lg hover:bg-slate-800 no-zoom transition" title="깃허브 모바일 사용법">
-                        <i class="fa-solid fa-circle-question text-lg"></i>
-                    </button>
-                    <button onclick="manualSave()" class="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-sm font-semibold shadow no-zoom transition">
-                        <i class="fa-solid fa-floppy-disk"></i>
-                        <span>저장</span>
-                    </button>
-                </div>
-            </div>
+  <!-- 상단 헤더 -->
+  <header class="bg-slate-900 text-white sticky top-0 z-30 shadow-md">
+    <div class="max-w-xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div>
+        <h1 class="text-lg font-bold tracking-tight flex items-center gap-2">
+          📦 수기 재고 카운터
+        </h1>
+        <p id="syncStatus" class="text-xs text-slate-400">기기 내부 저장됨 (LocalStorage)</p>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <button onclick="syncFromGitHub()" id="btnPull" class="hidden touch-btn bg-slate-800 hover:bg-slate-700 text-xs px-2.5 py-2 rounded-lg border border-slate-700 font-medium">
+          📥 불러오기
+        </button>
+        <button onclick="syncToGitHub()" id="btnPush" class="hidden touch-btn bg-emerald-600 hover:bg-emerald-500 text-xs px-2.5 py-2 rounded-lg font-bold shadow">
+          ☁️ 서버저장
+        </button>
+        <button onclick="openModal()" class="touch-btn bg-slate-800 hover:bg-slate-700 text-xs px-2.5 py-2 rounded-lg border border-slate-700">
+          ⚙️ GitHub 설정
+        </button>
+      </div>
+    </div>
+  </header>
 
-            <!-- 실시간 요약 카운터 -->
-            <div class="grid grid-cols-3 gap-2 bg-slate-800/90 p-2.5 rounded-xl border border-slate-700/80">
-                <div class="text-center border-r border-slate-700/80 pr-2">
-                    <p class="text-[11px] text-slate-400 font-medium">총 품목 종류</p>
-                    <p class="text-xl font-extrabold text-white tracking-tight mt-0.5"><span id="statTotalItems">0</span><span class="text-xs font-normal text-slate-400 ml-0.5">종</span></p>
-                </div>
-                <div class="text-center border-r border-slate-700/80 px-2">
-                    <p class="text-[11px] text-slate-400 font-medium">총 재고 합계</p>
-                    <p class="text-xl font-extrabold text-blue-400 tracking-tight mt-0.5"><span id="statTotalQty">0</span><span class="text-xs font-normal text-slate-400 ml-0.5">개</span></p>
-                </div>
-                <div class="text-center pl-2 flex flex-col justify-center items-center">
-                    <p class="text-[11px] text-slate-400 font-medium">자동저장 상태</p>
-                    <div class="flex items-center space-x-1 mt-1">
-                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                        <span id="lastSavedTime" class="text-xs font-semibold text-emerald-400">실시간 연동중</span>
-                    </div>
-                </div>
-            </div>
+  <main class="max-w-xl mx-auto px-3 pt-4">
+
+    <!-- 품목 추가 및 색상 선택 영역 -->
+    <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 mb-4 relative">
+      <label class="block text-xs font-bold text-slate-500 mb-2">새 품목 추가 & 태그 색상 선택</label>
+      
+      <!-- 색상 팔레트 선택 -->
+      <div id="colorPicker" class="flex items-center gap-2.5 mb-3">
+        <!-- JS에서 렌더링 -->
+      </div>
+
+      <!-- 입력창 & 추가 버튼 -->
+      <div class="flex gap-2 relative">
+        <div class="relative flex-1">
+          <input type="text" id="itemInput" autocomplete="off" placeholder="예: 패딩솜 탄소매트 더블" 
+            class="w-full px-3.5 py-3 rounded-xl border border-slate-300 focus:border-slate-900 focus:outline-none text-base font-medium"
+            oninput="handleInput()" onkeydown="handleKeydown(event)">
+          <!-- 자동완성 드롭다운 -->
+          <div id="autocompleteList" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-52 overflow-y-auto z-40 divide-y divide-slate-100"></div>
         </div>
-    </header>
+        <button onclick="addItem()" class="touch-btn bg-slate-900 active:bg-slate-700 text-white font-bold px-5 rounded-xl shrink-0">
+          추가
+        </button>
+      </div>
 
-    <!-- 메인 컨텐츠 영역 -->
-    <main class="max-w-xl mx-auto px-3 pt-4 space-y-4">
-
-        <!-- 품목 추가 및 자동완성 섹션 -->
-        <section class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200/90 relative">
-            <label for="itemInput" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-                <span><i class="fa-solid fa-plus-circle text-blue-600 mr-1"></i>새 품목 추가 / 빠른 검색 추가</span>
-                <span class="text-[11px] font-normal text-slate-400">터치 시 이전 기록 자동완성</span>
-            </label>
-            
-            <div class="relative flex items-center space-x-2">
-                <div class="relative flex-1">
-                    <input 
-                        type="text" 
-                        id="itemInput" 
-                        placeholder="예: 패딩솜 탄소매트 더블" 
-                        autocomplete="off"
-                        class="w-full pl-3.5 pr-9 py-3 bg-slate-50 border border-slate-300 rounded-xl text-base font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
-                    >
-                    <button 
-                        id="clearInputBtn" 
-                        onclick="clearItemInput()" 
-                        class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-slate-200 text-slate-500 hover:bg-slate-300 flex items-center justify-center text-xs no-zoom"
-                    >
-                        <i class="fa-solid fa-xmark"></i>
-                    </button>
-                </div>
-                <button 
-                    onclick="handleAddItem()" 
-                    class="bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-bold px-5 py-3 rounded-xl shadow-sm flex items-center space-x-1.5 shrink-0 no-zoom transition"
-                >
-                    <i class="fa-solid fa-plus"></i>
-                    <span>추가</span>
-                </button>
-            </div>
-
-            <!-- 커스텀 자동완성 드롭다운 -->
-            <div id="autocompleteDropdown" class="hidden absolute left-3.5 right-3.5 top-[88px] bg-white rounded-xl shadow-xl border border-slate-200 z-40 max-h-64 overflow-y-auto divide-y divide-slate-100">
-                <!-- JS로 동적 렌더링 -->
-            </div>
-
-            <!-- 자주 쓰는/최근 히스토리 빠른 추천 칩 -->
-            <div id="quickChipsContainer" class="mt-2.5 pt-2 border-t border-slate-100">
-                <div class="flex items-center justify-between mb-1.5">
-                    <span class="text-[11px] font-semibold text-slate-400"><i class="fa-solid fa-clock-rotate-left mr-1"></i>저장된 품목 단어장 (터치하여 즉시 추가)</span>
-                    <button onclick="openDictionaryModal()" class="text-[11px] text-blue-600 hover:underline font-medium no-zoom">단어장 관리</button>
-                </div>
-                <div id="quickChipsList" class="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-                    <!-- JS로 동적 렌더링 -->
-                </div>
-            </div>
-        </section>
-
-        <!-- 리스트 내 검색 필터 & 정렬 바 -->
-        <section class="flex items-center space-x-2">
-            <div class="relative flex-1">
-                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
-                <input 
-                    type="text" 
-                    id="filterInput" 
-                    oninput="renderInventoryList()"
-                    placeholder="현재 리스트 내 품목 필터링..." 
-                    class="w-full pl-9 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-sm"
-                >
-                <button 
-                    id="clearFilterBtn" 
-                    onclick="clearFilter()" 
-                    class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
-                >
-                    <i class="fa-solid fa-circle-xmark"></i>
-                </button>
-            </div>
-
-            <select 
-                id="sortSelect" 
-                onchange="handleSortChange()" 
-                class="bg-white border border-slate-200 text-slate-700 text-sm font-medium rounded-xl px-3 py-2.5 shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
-            >
-                <option value="recent">최근 추가순</option>
-                <option value="name">가나다순</option>
-                <option value="qtyDesc">수량 많은순</option>
-                <option value="qtyAsc">수량 적은순</option>
-            </select>
-        </section>
-
-        <!-- 재고 리스트 컨테이너 -->
-        <section id="inventoryList" class="space-y-2.5">
-            <!-- JS로 재고 카드 렌더링 -->
-        </section>
-
-        <!-- 빈 상태 안내 UI -->
-        <div id="emptyState" class="hidden bg-white rounded-2xl p-8 text-center border border-dashed border-slate-300 my-4">
-            <div class="w-14 h-14 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl">
-                <i class="fa-solid fa-clipboard-list"></i>
-            </div>
-            <h3 class="text-base font-bold text-slate-700 mb-1">등록된 재고 품목이 없습니다</h3>
-            <p class="text-xs text-slate-500 mb-4 leading-relaxed">상단 입력창에 품목명을 입력해 추가하거나,<br>저장된 단어장 칩을 터치해 바로 시작하세요.</p>
-            <button onclick="loadSampleData()" class="inline-flex items-center space-x-1.5 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 px-3.5 py-2 rounded-lg transition no-zoom">
-                <i class="fa-solid fa-wand-magic-sparkles"></i>
-                <span>예시 품목 불러오기 (패딩솜 탄소매트 등)</span>
-            </button>
+      <!-- 빠른 추천 칩 (단어장) -->
+      <div id="historySection" class="mt-3 pt-2.5 border-t border-slate-100 hidden">
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="text-[11px] font-semibold text-slate-400">최근 등록 단어장 (터치하여 바로 추가)</span>
         </div>
+        <div id="historyChips" class="flex flex-wrap gap-1.5"></div>
+      </div>
+    </section>
 
-    </main>
-
-    <!-- 하단 고정 액션 툴바 (내보내기 / 초기화) -->
-    <footer class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 z-20 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
-        <div class="max-w-xl mx-auto px-3 py-2.5 grid grid-cols-4 gap-2">
-            <button onclick="copyToClipboard()" class="flex flex-col items-center justify-center py-2 px-1 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 font-semibold text-xs no-zoom transition">
-                <i class="fa-regular fa-copy text-base mb-1 text-blue-600"></i>
-                <span>카톡/텍스트 복사</span>
-            </button>
-            <button onclick="exportToCSV()" class="flex flex-col items-center justify-center py-2 px-1 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 font-semibold text-xs no-zoom transition">
-                <i class="fa-solid fa-file-csv text-base mb-1 text-emerald-600"></i>
-                <span>엑셀(CSV) 저장</span>
-            </button>
-            <button onclick="confirmResetQuantities()" class="flex flex-col items-center justify-center py-2 px-1 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 font-semibold text-xs no-zoom transition">
-                <i class="fa-solid fa-rotate-left text-base mb-1 text-amber-600"></i>
-                <span>수량 0 초기화</span>
-            </button>
-            <button onclick="confirmClearAll()" class="flex flex-col items-center justify-center py-2 px-1 rounded-xl bg-slate-100 hover:bg-rose-50 active:bg-rose-100 text-slate-700 hover:text-rose-600 font-semibold text-xs no-zoom transition">
-                <i class="fa-regular fa-trash-can text-base mb-1 text-rose-500"></i>
-                <span>전체 비우기</span>
-            </button>
-        </div>
-    </footer>
-
-    <!-- 토스트 알림 (실행 취소 포함) -->
-    <div id="toastContainer" class="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-md pointer-events-none flex flex-col items-center space-y-2"></div>
-
-    <!-- 커스텀 확인 모달 (alert/confirm 대체) -->
-    <div id="confirmModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl border border-slate-100 animate-fade-in">
-            <div class="flex items-center space-x-3 mb-3">
-                <div id="confirmIcon" class="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-lg shrink-0">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                </div>
-                <h3 id="confirmTitle" class="text-base font-bold text-slate-900">확인</h3>
-            </div>
-            <p id="confirmMessage" class="text-sm text-slate-600 leading-relaxed mb-5"></p>
-            <div class="flex space-x-2">
-                <button onclick="closeConfirmModal()" class="flex-1 py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm no-zoom">
-                    취소
-                </button>
-                <button id="confirmActionBtn" class="flex-1 py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm no-zoom">
-                    확인
-                </button>
-            </div>
-        </div>
+    <!-- 필터 및 요약 바 -->
+    <div class="flex items-center justify-between px-1 mb-2">
+      <div class="flex items-center gap-1.5 overflow-x-auto py-1" id="filterBar">
+        <!-- 색상별 필터 칩 -->
+      </div>
+      <div class="text-xs font-bold text-slate-500 shrink-0 ml-2">
+        총 <span id="totalTypes" class="text-slate-900">0</span>종 / <span id="totalCount" class="text-emerald-600">0</span>개
+      </div>
     </div>
 
-    <!-- 단어장(자동완성 히스토리) 관리 모달 -->
-    <div id="dictionaryModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl flex flex-col max-h-[80vh]">
-            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-                <div>
-                    <h3 class="text-base font-bold text-slate-900">자동완성 단어장 관리</h3>
-                    <p class="text-xs text-slate-500 mt-0.5">한 번이라도 추가했던 품목들이 기억됩니다.</p>
-                </div>
-                <button onclick="closeDictionaryModal()" class="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-            
-            <div id="dictionaryModalList" class="flex-1 overflow-y-auto py-3 divide-y divide-slate-100">
-                <!-- JS 렌더링 -->
-            </div>
+    <!-- 재고 리스트 영역 -->
+    <section id="inventoryList" class="space-y-2.5">
+      <!-- JS에서 렌더링 -->
+    </section>
 
-            <div class="pt-3 border-t border-slate-100 flex justify-between items-center">
-                <span class="text-xs text-slate-400">품목을 터치하면 현재 리스트에 바로 추가됩니다.</span>
-                <button onclick="closeDictionaryModal()" class="px-4 py-2 bg-slate-800 text-white text-xs font-semibold rounded-xl">닫기</button>
-            </div>
+  </main>
+
+  <!-- GitHub 설정 모달 -->
+  <div id="githubModal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-xl">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-base font-bold text-slate-900">☁️ GitHub 세이브파일 연동 설정</h2>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+      </div>
+      <div class="space-y-3 text-sm">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">GitHub 아이디 (Owner)</label>
+          <input type="text" id="ghOwner" placeholder="예: honggildong" class="w-full px-3 py-2 border rounded-lg">
         </div>
-    </div>
-
-    <!-- 도움말 & GitHub 모바일 배포 안내 모달 -->
-    <div id="helpModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl flex flex-col max-h-[85vh]">
-            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-                <h3 class="text-base font-bold text-slate-900"><i class="fa-solid fa-mobile-screen-button text-blue-600 mr-1.5"></i>사용 팁 & 스마트폰 연결 방법</h3>
-                <button onclick="closeHelpModal()" class="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-            <div class="flex-1 overflow-y-auto py-3 space-y-4 text-xs text-slate-600 leading-relaxed">
-                <div class="bg-blue-50 p-3 rounded-xl border border-blue-100">
-                    <h4 class="font-bold text-blue-900 mb-1">💡 주요 기능 요약</h4>
-                    <ul class="list-disc list-inside space-y-1 text-blue-800">
-                        <li><strong>자동완성 기억:</strong> 한 번 입력한 품목명은 영구 기억되어 다음부터 초성이나 일부 글자만 쳐도 바로 뜹니다.</li>
-                        <li><strong>연속 터치 최적화:</strong> 화면을 안 보고 <kbd class="px-1.5 py-0.5 bg-white rounded border">+</kbd> 버튼을 빠르게 연타해도 화면이 확대되지 않고 진동(안드로이드)과 함께 카운트됩니다.</li>
-                        <li><strong>직접 수정:</strong> 숫자 칸을 터치하면 키패드로 즉시 원하는 수량을 입력할 수 있습니다.</li>
-                    </ul>
-                </div>
-                <div>
-                    <h4 class="font-bold text-slate-900 mb-1">🚀 GitHub에 올려서 내 폰에서 쓰는 법</h4>
-                    <ol class="list-decimal list-inside space-y-1.5">
-                        <li>GitHub에서 새 Repository(저장소)를 만듭니다.</li>
-                        <li>이 코드를 <code class="bg-slate-100 px-1.5 py-0.5 rounded font-mono text-slate-800">index.html</code> 파일로 저장해 업로드합니다.</li>
-                        <li>저장소의 <strong>Settings → Pages</strong> 메뉴로 이동합니다.</li>
-                        <li><strong>Branch</strong>를 <code class="bg-slate-100 px-1.5 py-0.5 rounded font-mono">main</code>으로 선택하고 Save를 누르면 1분 뒤 전용 웹사이트 주소가 생성됩니다.</li>
-                        <li>스마트폰 브라우저(크롬/사파리)로 접속한 뒤 <strong>'홈 화면에 추가'</strong>를 누르면 실제 앱처럼 전체화면으로 편하게 쓸 수 있습니다!</li>
-                    </ol>
-                </div>
-            </div>
-            <div class="pt-3 border-t border-slate-100 text-right">
-                <button onclick="closeHelpModal()" class="w-full py-2.5 bg-blue-600 text-white font-semibold text-sm rounded-xl">확인했습니다</button>
-            </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">저장소 이름 (Repository)</label>
+          <input type="text" id="ghRepo" placeholder="예: inventory-app" class="w-full px-3 py-2 border rounded-lg">
         </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Personal Access Token (repo 권한 체크 필수)</label>
+          <input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" class="w-full px-3 py-2 border rounded-lg">
+        </div>
+        <p class="text-xs text-slate-500 bg-slate-50 p-2.5 rounded-lg leading-relaxed">
+          설정 저장 후 상단의 <b>[☁️ 서버저장]</b>을 누르면 해당 저장소에 <code>inventory-data.json</code> 파일로 재고 데이터가 직접 저장됩니다.
+        </p>
+      </div>
+      <div class="flex gap-2 mt-5">
+        <button onclick="closeModal()" class="flex-1 py-2.5 rounded-xl border border-slate-300 font-semibold text-sm">취소</button>
+        <button onclick="saveGithubConfig()" class="flex-1 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-sm">설정 저장</button>
+      </div>
     </div>
+  </div>
 
-    <script>
-        /**
-         * 스마트 수기 재고 카운터 핵심 상태 및 LocalStorage 키
-         */
-        const STORAGE_KEYS = {
-            ITEMS: 'smart_inventory_items_v1',
-            HISTORY: 'smart_inventory_history_v1',
-            SORT: 'smart_inventory_sort_v1'
+  <script>
+    // 7가지 색상 태그 테마 정의
+    const COLORS = [
+      { id: 'blue',   name: '블루',   bg: 'bg-blue-600',   light: 'bg-blue-50',   border: 'border-l-blue-600',   text: 'text-blue-700' },
+      { id: 'rose',   name: '레드',   bg: 'bg-rose-500',   light: 'bg-rose-50',   border: 'border-l-rose-500',   text: 'text-rose-700' },
+      { id: 'emerald',name: '그린',   bg: 'bg-emerald-600',light: 'bg-emerald-50',border: 'border-l-emerald-600',text: 'text-emerald-700' },
+      { id: 'amber',  name: '옐로우', bg: 'bg-amber-500',  light: 'bg-amber-50',  border: 'border-l-amber-500',  text: 'text-amber-700' },
+      { id: 'purple', name: '퍼플',   bg: 'bg-purple-600', light: 'bg-purple-50', border: 'border-l-purple-600', text: 'text-purple-700' },
+      { id: 'cyan',   name: ' 민트',  bg: 'bg-cyan-600',   light: 'bg-cyan-50',   border: 'border-l-cyan-600',   text: 'text-cyan-700' },
+      { id: 'slate',  name: '그레이', bg: 'bg-slate-600',  light: 'bg-slate-100', border: 'border-l-slate-600',  text: 'text-slate-700' }
+    ];
+
+    let items = JSON.parse(localStorage.getItem('inv_items_v2') || '[]');
+    // 단어장: { title: '패딩솜 탄소매트 더블', color: 'blue' } 형태로 최근 색상까지 기억
+    let vocab = JSON.parse(localStorage.getItem('inv_vocab_v2') || '[]');
+    let selectedColor = 'blue';
+    let activeFilter = 'all';
+
+    // 초기화
+    function init() {
+      renderColorPicker();
+      renderFilterBar();
+      renderHistoryChips();
+      renderList();
+      checkGithubConfig();
+    }
+
+    function saveData() {
+      localStorage.setItem('inv_items_v2', JSON.stringify(items));
+      localStorage.setItem('inv_vocab_v2', JSON.stringify(vocab));
+      renderFilterBar();
+      renderHistoryChips();
+    }
+
+    function getColorObj(colorId) {
+      return COLORS.find(c => c.id === colorId) || COLORS[0];
+    }
+
+    // 제목에서 첫 글자 추출 (특수문자/공백 제외 첫 글자)
+    function getFirstChar(title) {
+      const cleaned = title.trim().replace(/^[^\w가-힣]+/, '');
+      return (cleaned.charAt(0) || title.trim().charAt(0) || '?').toUpperCase();
+    }
+
+    // 색상 선택기 렌더링
+    function renderColorPicker() {
+      const container = document.getElementById('colorPicker');
+      container.innerHTML = COLORS.map(c => `
+        <button type="button" onclick="selectColor('${c.id}')" 
+          class="touch-btn w-7 h-7 rounded-full ${c.bg} flex items-center justify-center transition-transform ${selectedColor === c.id ? 'ring-2 ring-offset-2 ring-slate-900 scale-110' : 'opacity-70 hover:opacity-100'}">
+          ${selectedColor === c.id ? '<span class="text-white text-xs font-bold">✓</span>' : ''}
+        </button>
+      `).join('');
+    }
+
+    function selectColor(colorId) {
+      selectedColor = colorId;
+      renderColorPicker();
+    }
+
+    // 색상 필터 바 렌더링
+    function renderFilterBar() {
+      const bar = document.getElementById('filterBar');
+      const usedColors = [...new Set(items.map(i => i.color))];
+      
+      let html = `
+        <button onclick="setFilter('all')" class="touch-btn text-xs px-2.5 py-1 rounded-full font-bold transition ${activeFilter === 'all' ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 border border-slate-200'}">
+          전체 (${items.length})
+        </button>
+      `;
+
+      COLORS.forEach(c => {
+        const count = items.filter(i => i.color === c.id).length;
+        if (count > 0 || activeFilter === c.id) {
+          html += `
+            <button onclick="setFilter('${c.id}')" class="touch-btn text-xs px-2.5 py-1 rounded-full font-bold flex items-center gap-1 transition ${activeFilter === c.id ? c.bg + ' text-white' : 'bg-white text-slate-600 border border-slate-200'}">
+              <span class="w-2 h-2 rounded-full ${activeFilter === c.id ? 'bg-white' : c.bg}"></span>
+              ${count}
+            </button>
+          `;
+        }
+      });
+      bar.innerHTML = html;
+    }
+
+    function setFilter(filterId) {
+      activeFilter = filterId;
+      renderFilterBar();
+      renderList();
+    }
+
+    // 품목 추가
+    function addItem(customTitle = null, customColor = null) {
+      const input = document.getElementById('itemInput');
+      const title = (customTitle !== null ? customTitle : input.value).trim();
+      const color = customColor || selectedColor;
+
+      if (!title) return;
+
+      // 이미 리스트에 있는 품목이면 수량 +1 및 강조
+      const existing = items.find(i => i.title === title);
+      if (existing) {
+        existing.count += 1;
+        saveData();
+        renderList(existing.id);
+      } else {
+        const newItem = {
+          id: Date.now().toString(),
+          title: title,
+          count: 1,
+          color: color
+        };
+        items.unshift(newItem);
+        saveData();
+        renderList(newItem.id);
+      }
+
+      // 단어장(자동완성)에 제목과 색상 저장
+      const vocabIdx = vocab.findIndex(v => v.title === title);
+      if (vocabIdx > -1) {
+        vocab[vocabIdx].color = color;
+      } else {
+        vocab.unshift({ title, color });
+      }
+      saveData();
+
+      input.value = '';
+      document.getElementById('autocompleteList').classList.add('hidden');
+      if (navigator.vibrate) navigator.vibrate(20);
+    }
+
+    // 카드 내 원형 아이콘 클릭 시 색상 즉시 순환 변경
+    function cycleItemColor(id) {
+      const item = items.find(i => i.id === id);
+      if (!item) return;
+      const currentIdx = COLORS.findIndex(c => c.id === item.color);
+      const nextColor = COLORS[(currentIdx + 1) % COLORS.length].id;
+      item.color = nextColor;
+
+      // 단어장 색상도 함께 업데이트
+      const v = vocab.find(v => v.title === item.title);
+      if (v) v.color = nextColor;
+
+      saveData();
+      renderList();
+      if (navigator.vibrate) navigator.vibrate(15);
+    }
+
+    // 수량 조절
+    function updateCount(id, delta) {
+      const item = items.find(i => i.id === id);
+      if (!item) return;
+      item.count = Math.max(0, (parseInt(item.count) || 0) + delta);
+      saveData();
+      
+      const inputEl = document.getElementById(`count-${id}`);
+      if (inputEl) inputEl.value = item.count;
+      updateSummary();
+      if (navigator.vibrate) navigator.vibrate(15);
+    }
+
+    // 수량 직접 타이핑
+    function handleDirectInput(id, val) {
+      const item = items.find(i => i.id === id);
+      if (!item) return;
+      const parsed = parseInt(val, 10);
+      item.count = isNaN(parsed) || parsed < 0 ? 0 : parsed;
+      saveData();
+      updateSummary();
+    }
+
+    // 품목 삭제
+    function deleteItem(id) {
+      if (!confirm('이 품목을 리스트에서 삭제할까요?\n(단어장 기록은 유지됩니다)')) return;
+      items = items.filter(i => i.id !== id);
+      saveData();
+      renderList();
+    }
+
+    // 총합 요약 업데이트
+    function updateSummary() {
+      document.getElementById('totalTypes').textContent = items.length;
+      const sum = items.reduce((acc, cur) => acc + (parseInt(cur.count) || 0), 0);
+      document.getElementById('totalCount').textContent = sum.toLocaleString();
+    }
+
+    // 리스트 렌더링
+    function renderList(highlightId = null) {
+      const container = document.getElementById('inventoryList');
+      updateSummary();
+
+      const filtered = activeFilter === 'all' ? items : items.filter(i => i.color === activeFilter);
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="bg-white rounded-2xl p-8 text-center border border-dashed border-slate-300 text-slate-400 text-sm">
+            등록된 재고 품목이 없습니다.<br>위 입력창에서 품목을 추가해 주세요.
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtered.map(item => {
+        const c = getColorObj(item.color);
+        const firstChar = getFirstChar(item.title);
+        const isHighlight = item.id === highlightId ? 'ring-2 ring-slate-900' : '';
+
+        return `
+          <div class="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-200 border-l-8 ${c.border} ${isHighlight} flex flex-col gap-2.5 transition-all">
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <!-- 첫 글자 원형 아이콘 (터치 시 색상 변경) -->
+                <button onclick="cycleItemColor('${item.id}')" title="터치하여 태그 색상 변경"
+                  class="touch-btn w-10 h-10 rounded-full ${c.bg} text-white font-extrabold text-base flex items-center justify-center shrink-0 shadow-sm active:scale-90 transition-transform">
+                  ${firstChar}
+                </button>
+                <div class="min-w-0">
+                  <h3 class="font-bold text-slate-900 text-base leading-snug break-all">${item.title}</h3>
+                  <span class="inline-block text-[11px] font-semibold px-2 py-0.5 rounded-md ${c.light} ${c.text} mt-0.5">
+                    아이콘 터치 시 색상변경
+                  </span>
+                </div>
+              </div>
+              <button onclick="deleteItem('${item.id}')" class="touch-btn text-slate-300 hover:text-rose-500 p-1.5 text-lg font-bold shrink-0">
+                &times;
+              </button>
+            </div>
+
+            <!-- 하단 컨트롤 바 -->
+            <div class="flex items-center justify-between bg-slate-50 rounded-xl p-1.5 border border-slate-100">
+              <div class="flex items-center gap-1">
+                <button onclick="updateCount('${item.id}', -10)" class="touch-btn px-2.5 py-2 rounded-lg bg-white border border-slate-200 text-xs font-bold text-slate-600 active:bg-slate-200">-10</button>
+                <button onclick="updateCount('${item.id}', 10)" class="touch-btn px-2.5 py-2 rounded-lg bg-white border border-slate-200 text-xs font-bold text-slate-600 active:bg-slate-200">+10</button>
+              </div>
+
+              <div class="flex items-center gap-1.5">
+                <button onclick="updateCount('${item.id}', -1)" 
+                  class="touch-btn w-12 h-11 rounded-xl bg-white border border-slate-300 text-slate-800 text-2xl font-black flex items-center justify-center active:bg-slate-200 shadow-sm">
+                  &minus;
+                </button>
+                <input type="number" id="count-${item.id}" value="${item.count}" 
+                  oninput="handleDirectInput('${item.id}', this.value)"
+                  class="w-16 h-11 text-center font-black text-lg bg-white border border-slate-300 rounded-xl focus:border-slate-900 focus:outline-none">
+                <button onclick="updateCount('${item.id}', 1)" 
+                  class="touch-btn w-12 h-11 rounded-xl ${c.bg} text-white text-2xl font-black flex items-center justify-center active:opacity-80 shadow-sm">
+                  &#43;
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 단어장 칩 렌더링
+    function renderHistoryChips() {
+      const section = document.getElementById('historySection');
+      const container = document.getElementById('historyChips');
+      if (vocab.length === 0) {
+        section.classList.add('hidden');
+        return;
+      }
+      section.classList.remove('hidden');
+      container.innerHTML = vocab.slice(0, 12).map(v => {
+        const c = getColorObj(v.color);
+        const firstChar = getFirstChar(v.title);
+        return `
+          <div class="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 pr-1 text-xs font-medium text-slate-700">
+            <button onclick="addItem('${v.title.replace(/'/g, "\\'")}', '${v.color}')" class="touch-btn flex items-center gap-1.5 pl-1.5 pr-2 py-1">
+              <span class="w-4 h-4 rounded-full ${c.bg} text-white text-[10px] font-bold flex items-center justify-center">${firstChar}</span>
+              <span>${v.title}</span>
+            </button>
+            <button onclick="removeVocab('${v.title.replace(/'/g, "\\'")}')" class="text-slate-400 hover:text-rose-500 px-1 font-bold">&times;</button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function removeVocab(title) {
+      vocab = vocab.filter(v => v.title !== title);
+      saveData();
+    }
+
+    // 자동완성 처리
+    function handleInput() {
+      const val = document.getElementById('itemInput').value.trim().toLowerCase();
+      const listEl = document.getElementById('autocompleteList');
+      if (!val) {
+        listEl.classList.add('hidden');
+        return;
+      }
+      const matches = vocab.filter(v => v.title.toLowerCase().includes(val));
+      if (matches.length === 0) {
+        listEl.classList.add('hidden');
+        return;
+      }
+      listEl.innerHTML = matches.map(v => {
+        const c = getColorObj(v.color);
+        const firstChar = getFirstChar(v.title);
+        return `
+          <button type="button" onclick="addItem('${v.title.replace(/'/g, "\\'")}', '${v.color}')"
+            class="w-full px-3.5 py-2.5 text-left text-sm font-medium hover:bg-slate-50 flex items-center gap-2.5">
+            <span class="w-6 h-6 rounded-full ${c.bg} text-white text-xs font-bold flex items-center justify-center shrink-0">${firstChar}</span>
+            <span class="truncate">${v.title}</span>
+          </button>
+        `;
+      }).join('');
+      listEl.classList.remove('hidden');
+    }
+
+    function handleKeydown(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addItem();
+      }
+    }
+
+    // ---------------- GitHub API 세이브파일 연동 ----------------
+    function openModal() {
+      const cfg = JSON.parse(localStorage.getItem('inv_gh_config') || '{}');
+      document.getElementById('ghOwner').value = cfg.owner || '';
+      document.getElementById('ghRepo').value = cfg.repo || '';
+      document.getElementById('ghToken').value = cfg.token || '';
+      document.getElementById('githubModal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('githubModal').classList.add('hidden');
+    }
+
+    function saveGithubConfig() {
+      const owner = document.getElementById('ghOwner').value.trim();
+      const repo = document.getElementById('ghRepo').value.trim();
+      const token = document.getElementById('ghToken').value.trim();
+
+      if (!owner || !repo || !token) {
+        alert('모든 항목을 입력해 주세요.');
+        return;
+      }
+      localStorage.setItem('inv_gh_config', JSON.stringify({ owner, repo, token }));
+      closeModal();
+      checkGithubConfig();
+      alert('GitHub 연동 설정이 완료되었습니다. 상단의 [서버저장] 또는 [불러오기] 버튼을 사용할 수 있습니다.');
+    }
+
+    function checkGithubConfig() {
+      const cfg = JSON.parse(localStorage.getItem('inv_gh_config') || '{}');
+      if (cfg.owner && cfg.repo && cfg.token) {
+        document.getElementById('btnPull').classList.remove('hidden');
+        document.getElementById('btnPush').classList.remove('hidden');
+        document.getElementById('syncStatus').textContent = `GitHub 연결됨 (${cfg.owner}/${cfg.repo})`;
+      }
+    }
+
+    // UTF-8 안전한 Base64 인코딩/디코딩
+    function utf8ToBase64(str) {
+      return btoa(unescape(encodeURIComponent(str)));
+    }
+    function base64ToUtf8(str) {
+      return decodeURIComponent(escape(atob(str)));
+    }
+
+    // GitHub 저장소에 inventory-data.json 저장
+    async function syncToGitHub() {
+      const cfg = JSON.parse(localStorage.getItem('inv_gh_config') || '{}');
+      if (!cfg.token) return openModal();
+
+      const btn = document.getElementById('btnPush');
+      const origText = btn.innerHTML;
+      btn.innerHTML = '⏳ 저장중...';
+      btn.disabled = true;
+
+      const url = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/inventory-data.json`;
+      const headers = {
+        'Authorization': `token ${cfg.token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json'
+      };
+
+      try {
+        // 기존 파일의 sha 값 조회 (덮어쓰기 위해 필요)
+        let sha = null;
+        const getRes = await fetch(url, { headers });
+        if (getRes.ok) {
+          const fileData = await getRes.json();
+          sha = fileData.sha;
+        }
+
+        const payload = {
+          updatedAt: new Date().toISOString(),
+          items: items,
+          vocab: vocab
         };
 
-        // 기본 샘플 자동완성 단어장 (최초 실행 시 편의 제공)
-        const DEFAULT_HISTORY = [
-            '패딩솜 탄소매트 더블',
-            '패딩솜 탄소매트 싱글',
-            '극세사 탄소매트 더블',
-            '타워형 리모컨 온풍기',
-            '미니 세라믹 팬히터',
-            '대용량 가습기 4L',
-            '프리미엄 제습기 16L'
-        ];
+        const body = {
+          message: `재고 데이터 업데이트 (${new Date().toLocaleString('ko-KR')})`,
+          content: utf8ToBase64(JSON.stringify(payload, null, 2))
+        };
+        if (sha) body.sha = sha;
 
-        let inventoryItems = [];
-        let historyDictionary = [];
-        let currentSort = 'recent';
-        let lastDeletedItem = null; // 실행 취소용 백업
-        let toastTimeout = null;
-
-        // DOM 요소 참조
-        const itemInput = document.getElementById('itemInput');
-        const clearInputBtn = document.getElementById('clearInputBtn');
-        const autocompleteDropdown = document.getElementById('autocompleteDropdown');
-        const inventoryListEl = document.getElementById('inventoryList');
-        const emptyStateEl = document.getElementById('emptyState');
-        const filterInput = document.getElementById('filterInput');
-        const clearFilterBtn = document.getElementById('clearFilterBtn');
-        const sortSelect = document.getElementById('sortSelect');
-
-        /**
-         * 초기 로드 및 이벤트 바인딩
-         */
-        window.addEventListener('DOMContentLoaded', () => {
-            loadFromStorage();
-            setupEventListeners();
-            renderAll();
+        const putRes = await fetch(url, {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify(body)
         });
 
-        function loadFromStorage() {
-            try {
-                const savedItems = localStorage.getItem(STORAGE_KEYS.ITEMS);
-                const savedHistory = localStorage.getItem(STORAGE_KEYS.HISTORY);
-                const savedSort = localStorage.getItem(STORAGE_KEYS.SORT);
-
-                if (savedItems) {
-                    inventoryItems = JSON.parse(savedItems);
-                } else {
-                    // 최초 방문 시 예시 품목 1개 기본 세팅
-                    inventoryItems = [
-                        { id: generateId(), name: '패딩솜 탄소매트 더블', qty: 1, updatedAt: Date.now() }
-                    ];
-                }
-
-                if (savedHistory) {
-                    historyDictionary = JSON.parse(savedHistory);
-                } else {
-                    historyDictionary = [...DEFAULT_HISTORY];
-                }
-
-                if (savedSort) {
-                    currentSort = savedSort;
-                    sortSelect.value = currentSort;
-                }
-            } catch (e) {
-                console.error('Storage 로드 오류:', e);
-                inventoryItems = [];
-                historyDictionary = [...DEFAULT_HISTORY];
-            }
-        }
-
-        function saveToStorage(showIndicator = false) {
-            try {
-                localStorage.setItem(STORAGE_KEYS.ITEMS, JSON.stringify(inventoryItems));
-                localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(historyDictionary));
-                localStorage.setItem(STORAGE_KEYS.SORT, currentSort);
-
-                const now = new Date();
-                const timeStr = now.toTimeString().split(' ')[0].substring(0, 5);
-                const statusEl = document.getElementById('lastSavedTime');
-                if (statusEl) {
-                    statusEl.textContent = `${timeStr} 저장됨`;
-                }
-
-                if (showIndicator) {
-                    showToast('모든 재고 데이터가 안전하게 저장되었습니다.', 'success');
-                }
-            } catch (e) {
-                console.error('Storage 저장 오류:', e);
-                showToast('저장 공간이 부족하거나 오류가 발생했습니다.', 'error');
-            }
-        }
-
-        function manualSave() {
-            vibrate(20);
-            saveToStorage(true);
-        }
-
-        function generateId() {
-            return 'item_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
-        }
-
-        function vibrate(ms = 12) {
-            if (navigator.vibrate) {
-                try { navigator.vibrate(ms); } catch (e) {}
-            }
-        }
-
-        /**
-         * 입력창 및 자동완성 이벤트 설정
-         */
-        function setupEventListeners() {
-            // 입력 타이핑 시 자동완성 필터링
-            itemInput.addEventListener('input', () => {
-                const val = itemInput.value;
-                clearInputBtn.classList.toggle('hidden', val.length === 0);
-                renderAutocomplete(val);
-            });
-
-            // 입력창 포커스 시 자동완성 표시
-            itemInput.addEventListener('focus', () => {
-                renderAutocomplete(itemInput.value);
-            });
-
-            // 엔터키로 품목 즉시 추가
-            itemInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleAddItem();
-                } else if (e.key === 'Escape') {
-                    hideAutocomplete();
-                }
-            });
-
-            // 외부 영역 클릭 시 자동완성 닫기
-            document.addEventListener('click', (e) => {
-                if (!e.target.closest('#itemInput') && !e.target.closest('#autocompleteDropdown')) {
-                    hideAutocomplete();
-                }
-            });
-        }
-
-        /**
-         * 스마트 자동완성 렌더링 및 제어
-         */
-        function renderAutocomplete(query = '') {
-            const cleanQuery = query.trim().toLowerCase();
-            
-            // 검색어와 일치하는 히스토리 필터링
-            const matched = historyDictionary.filter(word => 
-                word.toLowerCase().includes(cleanQuery)
-            );
-
-            if (matched.length === 0) {
-                hideAutocomplete();
-                return;
-            }
-
-            autocompleteDropdown.innerHTML = matched.map(word => {
-                const existingItem = inventoryItems.find(i => i.name.toLowerCase() === word.toLowerCase());
-                const badgeHtml = existingItem 
-                    ? `<span class="text-[11px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md font-semibold">현재 ${existingItem.qty}개</span>`
-                    : `<span class="text-[11px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md">리스트에 추가</span>`;
-
-                // 검색어 하이라이트 처리
-                let displayWord = escapeHtml(word);
-                if (cleanQuery.length > 0) {
-                    const regex = new RegExp(`(${escapeRegExp(cleanQuery)})`, 'gi');
-                    displayWord = displayWord.replace(regex, '<mark class="bg-yellow-200 text-slate-900 rounded px-0.5">$1</mark>');
-                }
-
-                return `
-                    <div class="flex items-center justify-between px-3.5 py-2.5 hover:bg-slate-50 active:bg-blue-50 cursor-pointer transition"
-                         onclick="selectAutocompleteItem('${escapeJsString(word)}')">
-                        <div class="flex items-center space-x-2 min-w-0 pr-2">
-                            <i class="fa-solid fa-clock-rotate-left text-slate-400 text-xs shrink-0"></i>
-                            <span class="text-sm font-medium text-slate-800 truncate">${displayWord}</span>
-                        </div>
-                        <div class="flex items-center space-x-2 shrink-0">
-                            ${badgeHtml}
-                            <button onclick="event.stopPropagation(); removeHistoryWord('${escapeJsString(word)}')" 
-                                    class="w-6 h-6 rounded-full text-slate-300 hover:text-rose-500 hover:bg-rose-50 flex items-center justify-center text-xs"
-                                    title="자동완성 기록에서 삭제">
-                                <i class="fa-solid fa-xmark"></i>
-                            </button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            autocompleteDropdown.classList.remove('hidden');
-        }
-
-        function hideAutocomplete() {
-            autocompleteDropdown.classList.add('hidden');
-        }
-
-        function selectAutocompleteItem(word) {
-            vibrate(15);
-            itemInput.value = word;
-            clearInputBtn.classList.add('hidden');
-            hideAutocomplete();
-            handleAddItem();
-        }
-
-        function clearItemInput() {
-            itemInput.value = '';
-            clearInputBtn.classList.add('hidden');
-            itemInput.focus();
-            renderAutocomplete('');
-        }
-
-        /**
-         * 자주 쓰는 단어장 칩 렌더링
-         */
-        function renderQuickChips() {
-            const container = document.getElementById('quickChipsContainer');
-            const listEl = document.getElementById('quickChipsList');
-
-            if (historyDictionary.length === 0) {
-                container.classList.add('hidden');
-                return;
-            }
-            container.classList.remove('hidden');
-
-            // 최근 12개까지 빠른 칩으로 표시
-            const chips = historyDictionary.slice(0, 12);
-            listEl.innerHTML = chips.map(word => {
-                const inList = inventoryItems.some(i => i.name.toLowerCase() === word.toLowerCase());
-                const chipClass = inList 
-                    ? 'bg-blue-50 text-blue-700 border-blue-200' 
-                    : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200';
-                
-                return `
-                    <button onclick="selectAutocompleteItem('${escapeJsString(word)}')"
-                            class="shrink-0 text-xs font-medium px-2.5 py-1.5 rounded-lg border ${chipClass} flex items-center space-x-1 no-zoom active:scale-95 transition">
-                        <span>${escapeHtml(word)}</span>
-                        ${inList ? '<i class="fa-solid fa-check text-[10px] text-blue-500 ml-1"></i>' : '<i class="fa-solid fa-plus text-[10px] text-slate-400 ml-1"></i>'}
-                    </button>
-                `;
-            }).join('');
-        }
-
-        /**
-         * 품목 추가 및 중복 시 스마트 카운트 처리
-         */
-        function handleAddItem() {
-            const rawName = itemInput.value.trim();
-            if (!rawName) {
-                showToast('추가할 품목 이름을 입력해주세요.', 'warning');
-                itemInput.focus();
-                return;
-            }
-
-            vibrate(15);
-
-            // 1. 자동완성 히스토리 단어장에 영구 저장 (최신순으로 맨 앞에 배치)
-            addWordToHistory(rawName);
-
-            // 2. 만약 필터 검색어가 걸려있다면 해제하여 추가된 항목이 보이도록 처리
-            if (filterInput.value.trim() !== '') {
-                filterInput.value = '';
-                clearFilterBtn.classList.add('hidden');
-            }
-
-            // 3. 이미 리스트에 존재하는 품목인지 확인
-            const existingIndex = inventoryItems.findIndex(
-                item => item.name.toLowerCase() === rawName.toLowerCase()
-            );
-
-            if (existingIndex !== -1) {
-                // 이미 존재하면 수량 +1 증가 후 해당 항목으로 스크롤 & 하이라이트
-                const targetItem = inventoryItems[existingIndex];
-                targetItem.qty += 1;
-                targetItem.updatedAt = Date.now();
-                
-                saveToStorage();
-                renderAll();
-                highlightAndScrollToItem(targetItem.id);
-                showToast(`'${targetItem.name}' 수량이 +1 증가했습니다. (현재 ${targetItem.qty}개)`, 'info');
-            } else {
-                // 새 품목 추가 (기본 수량 1개)
-                const newItem = {
-                    id: generateId(),
-                    name: rawName,
-                    qty: 1,
-                    updatedAt: Date.now()
-                };
-                inventoryItems.unshift(newItem);
-                saveToStorage();
-                renderAll();
-                highlightAndScrollToItem(newItem.id);
-                showToast(`'${rawName}' 품목이 추가되었습니다.`, 'success');
-            }
-
-            // 입력창 초기화
-            itemInput.value = '';
-            clearInputBtn.classList.add('hidden');
-            hideAutocomplete();
-        }
-
-        function addWordToHistory(word) {
-            const clean = word.trim();
-            if (!clean) return;
-            historyDictionary = historyDictionary.filter(w => w.toLowerCase() !== clean.toLowerCase());
-            historyDictionary.unshift(clean);
-            // 최대 100개까지 히스토리 유지
-            if (historyDictionary.length > 100) {
-                historyDictionary.pop();
-            }
-        }
-
-        function removeHistoryWord(word) {
-            historyDictionary = historyDictionary.filter(w => w !== word);
-            saveToStorage();
-            renderAutocomplete(itemInput.value);
-            renderQuickChips();
-            renderDictionaryModalList();
-        }
-
-        /**
-         * 수량 변경 (+ / - 버튼 및 직접 타이핑 수정)
-         */
-        function adjustQty(id, delta) {
-            const item = inventoryItems.find(i => i.id === id);
-            if (!item) return;
-
-            vibrate(12);
-            const nextQty = Math.max(0, (parseInt(item.qty, 10) || 0) + delta);
-            item.qty = nextQty;
-            item.updatedAt = Date.now();
-
-            // 전체 리렌더링 대신 해당 숫자 input과 상단 대시보드만 즉시 업데이트하여 연속 터치 반응성 극대화
-            const inputEl = document.getElementById(`qty_input_${id}`);
-            if (inputEl) {
-                inputEl.value = nextQty;
-            }
-            updateDashboardStats();
-            renderQuickChips();
-            saveToStorage();
-        }
-
-        function handleDirectQtyInput(id, rawValue) {
-            const item = inventoryItems.find(i => i.id === id);
-            if (!item) return;
-
-            // 빈 문자열이면 타이핑 중이므로 임시로 0 처리하되 입력창은 비워둠
-            if (rawValue === '') {
-                item.qty = 0;
-                updateDashboardStats();
-                saveToStorage();
-                return;
-            }
-
-            let parsed = parseInt(rawValue, 10);
-            if (isNaN(parsed) || parsed < 0) parsed = 0;
-            if (parsed > 999999) parsed = 999999;
-
-            item.qty = parsed;
-            item.updatedAt = Date.now();
-            updateDashboardStats();
-            renderQuickChips();
-            saveToStorage();
-        }
-
-        function normalizeQtyInputOnBlur(id) {
-            const item = inventoryItems.find(i => i.id === id);
-            const inputEl = document.getElementById(`qty_input_${id}`);
-            if (item && inputEl) {
-                inputEl.value = item.qty;
-            }
-        }
-
-        /**
-         * 개별 품목 삭제 및 실행 취소(Undo)
-         */
-        function deleteItem(id) {
-            const idx = inventoryItems.findIndex(i => i.id === id);
-            if (idx === -1) return;
-
-            vibrate(25);
-            const removed = inventoryItems.splice(idx, 1)[0];
-            lastDeletedItem = { item: removed, index: idx };
-
-            saveToStorage();
-            renderAll();
-
-            showUndoToast(`'${removed.name}' 항목이 삭제되었습니다.`);
-        }
-
-        function undoDelete() {
-            if (!lastDeletedItem) return;
-            vibrate(15);
-            inventoryItems.splice(lastDeletedItem.index, 0, lastDeletedItem.item);
-            lastDeletedItem = null;
-            saveToStorage();
-            renderAll();
-            showToast('삭제가 취소되어 항목이 복구되었습니다.', 'success');
-        }
-
-        /**
-         * 전체 렌더링 및 정렬/필터
-         */
-        function renderAll() {
-            updateDashboardStats();
-            renderQuickChips();
-            renderInventoryList();
-        }
-
-        function updateDashboardStats() {
-            const totalItems = inventoryItems.length;
-            const totalQty = inventoryItems.reduce((sum, item) => sum + (parseInt(item.qty, 10) || 0), 0);
-
-            document.getElementById('statTotalItems').textContent = totalItems.toLocaleString();
-            document.getElementById('statTotalQty').textContent = totalQty.toLocaleString();
-        }
-
-        function handleSortChange() {
-            currentSort = sortSelect.value;
-            saveToStorage();
-            renderInventoryList();
-        }
-
-        function clearFilter() {
-            filterInput.value = '';
-            clearFilterBtn.classList.add('hidden');
-            renderInventoryList();
-        }
-
-        function renderInventoryList() {
-            const filterKeyword = filterInput.value.trim().toLowerCase();
-            clearFilterBtn.classList.toggle('hidden', filterKeyword.length === 0);
-
-            // 필터링
-            let filtered = inventoryItems.filter(item => 
-                item.name.toLowerCase().includes(filterKeyword)
-            );
-
-            // 정렬
-            filtered.sort((a, b) => {
-                if (currentSort === 'name') {
-                    return a.name.localeCompare(b.name, 'ko');
-                } else if (currentSort === 'qtyDesc') {
-                    return b.qty - a.qty;
-                } else if (currentSort === 'qtyAsc') {
-                    return a.qty - b.qty;
-                }
-                // 기본 recent (초기 배열 순서 유지)
-                return 0;
-            });
-
-            if (inventoryItems.length === 0) {
-                inventoryListEl.innerHTML = '';
-                emptyStateEl.classList.remove('hidden');
-                return;
-            }
-
-            emptyStateEl.classList.add('hidden');
-
-            if (filtered.length === 0) {
-                inventoryListEl.innerHTML = `
-                    <div class="bg-white rounded-2xl p-6 text-center border border-slate-200">
-                        <p class="text-sm text-slate-500">'<strong>${escapeHtml(filterInput.value)}</strong>' 검색 결과가 없습니다.</p>
-                    </div>
-                `;
-                return;
-            }
-
-            inventoryListEl.innerHTML = filtered.map((item) => `
-                <div id="card_${item.id}" class="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-200/90 transition-all">
-                    <!-- 상단: 품목명 및 삭제 버튼 -->
-                    <div class="flex items-start justify-between gap-2 mb-3">
-                        <div class="flex items-center space-x-2 min-w-0">
-                            <span class="w-2 h-5 rounded-full ${item.qty > 0 ? 'bg-blue-600' : 'bg-slate-300'} shrink-0"></span>
-                            <h2 class="text-base font-bold text-slate-900 break-all leading-snug">${escapeHtml(item.name)}</h2>
-                        </div>
-                        <button onclick="deleteItem('${item.id}')" 
-                                class="text-slate-400 hover:text-rose-500 active:text-rose-600 p-1.5 -mr-1 -mt-1 rounded-lg hover:bg-rose-50 no-zoom shrink-0 transition"
-                                title="품목 삭제">
-                            <i class="fa-regular fa-trash-can text-sm"></i>
-                        </button>
-                    </div>
-
-                    <!-- 하단: 빠른 보조 버튼 & 메인 수량 조절 컨트롤러 -->
-                    <div class="flex items-center justify-between gap-2">
-                        <!-- 좌측 빠른 수량 보조 버튼 (0 초기화, -10, +10) -->
-                        <div class="flex items-center space-x-1">
-                            <button onclick="adjustQty('${item.id}', -${item.qty})" 
-                                    class="px-2 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-600 font-semibold text-xs no-zoom transition">
-                                0
-                            </button>
-                            <button onclick="adjustQty('${item.id}', -10)" 
-                                    class="px-2 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-600 font-semibold text-xs no-zoom transition">
-                                -10
-                            </button>
-                            <button onclick="adjustQty('${item.id}', 10)" 
-                                    class="px-2 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 font-semibold text-xs no-zoom transition">
-                                +10
-                            </button>
-                        </div>
-
-                        <!-- 우측 메인 - / 수량 타이핑 / + 컨트롤 -->
-                        <div class="flex items-center space-x-1.5">
-                            <button onclick="adjustQty('${item.id}', -1)" 
-                                    class="w-12 h-12 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-800 flex items-center justify-center text-xl font-bold shadow-xs border border-slate-200/80 no-zoom active:scale-95 transition"
-                                    aria-label="1 감소">
-                                <i class="fa-solid fa-minus"></i>
-                            </button>
-
-                            <input type="number" 
-                                   id="qty_input_${item.id}"
-                                   value="${item.qty}" 
-                                   min="0"
-                                   inputmode="numeric"
-                                   pattern="[0-9]*"
-                                   onfocus="this.select()"
-                                   oninput="handleDirectQtyInput('${item.id}', this.value)"
-                                   onblur="normalizeQtyInputOnBlur('${item.id}')"
-                                   class="w-20 h-12 text-center bg-slate-50 border-2 border-slate-200 focus:border-blue-500 focus:bg-white rounded-xl text-xl font-extrabold text-slate-900 focus:outline-none transition"
-                                   aria-label="수량 직접 입력">
-
-                            <button onclick="adjustQty('${item.id}', 1)" 
-                                    class="w-14 h-12 rounded-xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white flex items-center justify-center text-xl font-bold shadow-md shadow-blue-600/20 no-zoom active:scale-95 transition"
-                                    aria-label="1 증가">
-                                <i class="fa-solid fa-plus"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function highlightAndScrollToItem(id) {
-            setTimeout(() => {
-                const card = document.getElementById(`card_${id}`);
-                if (card) {
-                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    card.classList.remove('item-highlight');
-                    void card.offsetWidth; // 리플로우 트리거
-                    card.classList.add('item-highlight');
-                }
-            }, 50);
-        }
-
-        /**
-         * 샘플 데이터 불러오기
-         */
-        function loadSampleData() {
-            vibrate(20);
-            const samples = [
-                { id: generateId(), name: '패딩솜 탄소매트 더블', qty: 12, updatedAt: Date.now() },
-                { id: generateId(), name: '패딩솜 탄소매트 싱글', qty: 8, updatedAt: Date.now() },
-                { id: generateId(), name: '타워형 리모컨 온풍기', qty: 5, updatedAt: Date.now() }
-            ];
-            samples.forEach(s => addWordToHistory(s.name));
-            inventoryItems = samples;
-            saveToStorage();
-            renderAll();
-            showToast('예시 재고 리스트를 불러왔습니다.', 'success');
-        }
-
-        /**
-         * 내보내기 및 전체 관리 기능
-         */
-        function copyToClipboard() {
-            if (inventoryItems.length === 0) {
-                showToast('복사할 재고 리스트가 없습니다.', 'warning');
-                return;
-            }
-
-            const now = new Date();
-            const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-            const totalQty = inventoryItems.reduce((sum, i) => sum + (parseInt(i.qty, 10) || 0), 0);
-
-            let text = `[재고 실사 내역 - ${dateStr}]\n`;
-            text += `총 ${inventoryItems.length}종 / 합계 ${totalQty}개\n`;
-            text += `------------------------\n`;
-            inventoryItems.forEach((item, idx) => {
-                text += `${idx + 1}. ${item.name} : ${item.qty}개\n`;
-            });
-
-            // iFrame 및 모바일 호환 클립보드 복사
-            const textarea = document.createElement('textarea');
-            textarea.value = text;
-            textarea.style.position = 'fixed';
-            textarea.style.opacity = '0';
-            document.body.appendChild(textarea);
-            textarea.select();
-            try {
-                document.execCommand('copy');
-                vibrate(20);
-                showToast('클립보드에 복사되었습니다! 카카오톡이나 메모장에 붙여넣기 하세요.', 'success');
-            } catch (err) {
-                showToast('복사에 실패했습니다.', 'error');
-            }
-            document.body.removeChild(textarea);
-        }
-
-        function exportToCSV() {
-            if (inventoryItems.length === 0) {
-                showToast('저장할 재고 리스트가 없습니다.', 'warning');
-                return;
-            }
-
-            vibrate(20);
-            // 한글 깨짐 방지를 위한 UTF-8 BOM 추가
-            let csvContent = '\uFEFF번호,품목명,수량\n';
-            inventoryItems.forEach((item, index) => {
-                const escapedName = `"${item.name.replace(/"/g, '""')}"`;
-                csvContent += `${index + 1},${escapedName},${item.qty}\n`;
-            });
-
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-            link.setAttribute('href', url);
-            link.setAttribute('download', `재고실사_${today}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-
-            showToast('엑셀(CSV) 파일 다운로드가 시작되었습니다.', 'success');
-        }
-
-        function confirmResetQuantities() {
-            if (inventoryItems.length === 0) {
-                showToast('초기화할 품목이 없습니다.', 'warning');
-                return;
-            }
-            openConfirmModal(
-                '전체 수량 0 초기화',
-                '현재 등록된 모든 품목의 재고 수량을 0개로 초기화하시겠습니까? (품목 이름은 유지됩니다)',
-                () => {
-                    vibrate(25);
-                    inventoryItems.forEach(item => item.qty = 0);
-                    saveToStorage();
-                    renderAll();
-                    showToast('모든 품목의 수량이 0으로 초기화되었습니다.', 'info');
-                }
-            );
-        }
-
-        function confirmClearAll() {
-            if (inventoryItems.length === 0) {
-                showToast('이미 리스트가 비어 있습니다.', 'warning');
-                return;
-            }
-            openConfirmModal(
-                '리스트 전체 비우기',
-                '현재 화면의 모든 재고 리스트를 비우시겠습니까? (한 번 입력했던 자동완성 단어장 기록은 그대로 보존됩니다)',
-                () => {
-                    vibrate(30);
-                    inventoryItems = [];
-                    saveToStorage();
-                    renderAll();
-                    showToast('재고 리스트를 모두 비웠습니다.', 'info');
-                }
-            );
-        }
-
-        /**
-         * 모달 제어 함수들
-         */
-        function openConfirmModal(title, message, onConfirm) {
-            document.getElementById('confirmTitle').textContent = title;
-            document.getElementById('confirmMessage').textContent = message;
-            const actionBtn = document.getElementById('confirmActionBtn');
-            actionBtn.onclick = () => {
-                closeConfirmModal();
-                onConfirm();
-            };
-            document.getElementById('confirmModal').classList.remove('hidden');
-        }
-
-        function closeConfirmModal() {
-            document.getElementById('confirmModal').classList.add('hidden');
-        }
-
-        function openDictionaryModal() {
-            renderDictionaryModalList();
-            document.getElementById('dictionaryModal').classList.remove('hidden');
-        }
-
-        function closeDictionaryModal() {
-            document.getElementById('dictionaryModal').classList.add('hidden');
-        }
-
-        function renderDictionaryModalList() {
-            const listEl = document.getElementById('dictionaryModalList');
-            if (historyDictionary.length === 0) {
-                listEl.innerHTML = `<p class="text-xs text-slate-400 text-center py-6">저장된 자동완성 단어가 없습니다.</p>`;
-                return;
-            }
-
-            listEl.innerHTML = historyDictionary.map(word => `
-                <div class="flex items-center justify-between py-2.5 px-2 hover:bg-slate-50 rounded-lg">
-                    <button onclick="selectAutocompleteItem('${escapeJsString(word)}'); closeDictionaryModal();" 
-                            class="text-sm font-medium text-slate-800 text-left flex-1 truncate pr-2">
-                        ${escapeHtml(word)}
-                    </button>
-                    <button onclick="removeHistoryWord('${escapeJsString(word)}')" 
-                            class="text-xs text-rose-500 hover:bg-rose-50 px-2.5 py-1 rounded-md font-medium shrink-0">
-                        삭제
-                    </button>
-                </div>
-            `).join('');
-        }
-
-        function openHelpModal() {
-            document.getElementById('helpModal').classList.remove('hidden');
-        }
-
-        function closeHelpModal() {
-            document.getElementById('helpModal').classList.add('hidden');
-        }
-
-        /**
-         * 토스트 메시지 시스템
-         */
-        function showToast(message, type = 'info') {
-            const container = document.getElementById('toastContainer');
-            if (toastTimeout) clearTimeout(toastTimeout);
-
-            let bgColor = 'bg-slate-800';
-            let icon = 'fa-circle-info text-blue-400';
-            if (type === 'success') icon = 'fa-circle-check text-emerald-400';
-            if (type === 'warning') icon = 'fa-circle-exclamation text-amber-400';
-            if (type === 'error') icon = 'fa-triangle-exclamation text-rose-400';
-
-            container.innerHTML = `
-                <div class="${bgColor} text-white px-4 py-3 rounded-xl shadow-lg flex items-center space-x-2.5 text-xs font-medium pointer-events-auto border border-slate-700">
-                    <i class="fa-solid ${icon} text-sm shrink-0"></i>
-                    <span>${escapeHtml(message)}</span>
-                </div>
-            `;
-
-            toastTimeout = setTimeout(() => {
-                container.innerHTML = '';
-            }, 2600);
-        }
-
-        function showUndoToast(message) {
-            const container = document.getElementById('toastContainer');
-            if (toastTimeout) clearTimeout(toastTimeout);
-
-            container.innerHTML = `
-                <div class="bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl flex items-center justify-between w-full text-xs font-medium pointer-events-auto border border-slate-700">
-                    <span class="truncate pr-3">${escapeHtml(message)}</span>
-                    <button onclick="undoDelete()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-3 py-1.5 rounded-lg shrink-0 no-zoom">
-                        실행 취소
-                    </button>
-                </div>
-            `;
-
-            toastTimeout = setTimeout(() => {
-                container.innerHTML = '';
-            }, 4000);
-        }
-
-        /**
-         * 문자열 이스케이프 유틸리티
-         */
-        function escapeHtml(str) {
-            return String(str)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#039;');
-        }
-
-        function escapeJsString(str) {
-            return String(str)
-                .replace(/\\/g, '\\\\')
-                .replace(/'/g, "\\'")
-                .replace(/"/g, '\\"');
-        }
-
-        function escapeRegExp(str) {
-            return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        }
-    </script>
+        if (!putRes.ok) throw new Error('저장 실패. 토큰 권한이나 저장소 이름을 확인하세요.');
+
+        document.getElementById('syncStatus').textContent = `최근 서버 저장: ${new Date().toLocaleTimeString('ko-KR')}`;
+        alert('✅ GitHub 저장소에 세이브 파일(inventory-data.json)이 성공적으로 저장되었습니다!');
+      } catch (err) {
+        alert('❌ 오류: ' + err.message);
+      } finally {
+        btn.innerHTML = origText;
+        btn.disabled = false;
+      }
+    }
+
+    // GitHub 저장소에서 inventory-data.json 불러오기
+    async function syncFromGitHub() {
+      const cfg = JSON.parse(localStorage.getItem('inv_gh_config') || '{}');
+      if (!cfg.token) return openModal();
+
+      if (!confirm('GitHub에 저장된 세이브 파일로 현재 화면의 리스트를 덮어쓸까요?')) return;
+
+      const btn = document.getElementById('btnPull');
+      const origText = btn.innerHTML;
+      btn.innerHTML = '⏳ 로딩중...';
+      btn.disabled = true;
+
+      const url = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/inventory-data.json`;
+      const headers = {
+        'Authorization': `token ${cfg.token}`,
+        'Accept': 'application/vnd.github.v3+json'
+      };
+
+      try {
+        const res = await fetch(url, { headers, cache: 'no-store' });
+        if (!res.ok) throw new Error('저장된 inventory-data.json 파일을 찾을 수 없습니다.');
+
+        const fileData = await res.json();
+        const decoded = JSON.parse(base64ToUtf8(fileData.content));
+
+        items = decoded.items || [];
+        vocab = decoded.vocab || [];
+        saveData();
+        renderList();
+
+        document.getElementById('syncStatus').textContent = `최근 불러오기: ${new Date().toLocaleTimeString('ko-KR')}`;
+        alert('✅ GitHub에서 세이브 데이터를 성공적으로 불러왔습니다!');
+      } catch (err) {
+        alert('❌ 오류: ' + err.message);
+      } finally {
+        btn.innerHTML = origText;
+        btn.disabled = false;
+      }
+    }
+
+    init();
+  </script>
 </body>
 </html>
